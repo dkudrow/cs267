@@ -10,10 +10,15 @@
 #ifndef AST_H
 #define AST_H
 
+<<<<<<< HEAD
 #include <stdio.h>
 
 /* the following macros specify the order of children in each type of node */
 /* the children are indexed by 'node->children[MACRO]' */
+=======
+/* the folowing macros specify how the children of different flavors of */
+/* ast_node node are arranged in the children array */
+>>>>>>> added comments
 
 /* program node children */
 #define DECL_LIST_HEAD 0
@@ -48,9 +53,15 @@
 #define EXPR1          0
 #define EXPR2          1
 
+<<<<<<< HEAD
 /* generic AST node type */
 typedef struct _ast_node {
   /* the tag member sepcifies what type of AST node is being referenced */
+=======
+/* node type for AST */
+typedef struct _ast_node {
+  /* the tag field defines the node type */
+>>>>>>> added comments
   enum {
     _undef = 0, _prog, _spec, _decl, _proc, _block, _assign_stat, _skip_stat,
     _if_then_stat, _if_else_stat, _while_stat, _await_stat, _id_expr,
@@ -69,8 +80,11 @@ typedef struct _ast_node {
                                        /* contains the highest pc value */
 
 /* AST methods */
+<<<<<<< HEAD
 void ast_draw_tree(ast_node* tree, FILE* out);
 ast_node* parse();
+=======
+>>>>>>> added comments
 ast_node* ast_init();
 ast_node* ast_block_init();
 void ast_push_spec(ast_node* prog_node, ast_node* expr);

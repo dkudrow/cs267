@@ -11,6 +11,7 @@
 
 #include "cfg.h"
 
+<<<<<<< HEAD
 /* ast.h is included in cfg.h so it is not explicitly included here */
 
 /* if a node has a label, return it as a string */
@@ -20,6 +21,11 @@
 /* traverse an AST and output GraphViz dot code for each node */
 void ast_draw_node(ast_node* host, int parent, FILE* out) {
   if (!host) return;                   /* return at list terminators */
+=======
+/* traverse AST and output GraphViz dot code for each node */
+void ast_draw_node(ast_node* host, int parent, FILE* out) {
+  if (!host) return;                   /* return if host is empty */
+>>>>>>> added comments
   static int node_count = 0;           /* global node count */
   int current = node_count++;          /* id of current node */
   switch (host->tag) {
@@ -28,8 +34,13 @@ void ast_draw_node(ast_node* host, int parent, FILE* out) {
       ast_draw_node(host->children[DECL_LIST_HEAD], current, out);
       ast_draw_node(host->children[PROC_LIST_HEAD], current, out);
       break;
+<<<<<<< HEAD
     case _decl:                        /* visit declaration node */
       fprintf(out, "%i [label=\"Declaration\\n'%s'\"];\n", current, host->name);
+=======
+    case _decl:
+      fprintf(out, "%i [label=%s];\n", current, host->name);
+>>>>>>> added comments
       fprintf(out, "%i -> %i;\n", parent, current);
       ast_draw_node(host->children[NEXT_DECL], parent, out);
       break;
@@ -45,11 +56,16 @@ void ast_draw_node(ast_node* host, int parent, FILE* out) {
     case _assign_stat:                 /* visit assignment statement node */
       fprintf(out, "%i [label=\"Assign\\nlabel: %s\"];\n", current, AST_LABEL(host), host->name);
       fprintf(out, "%i -> %i;\n", parent, current);
+<<<<<<< HEAD
       fprintf(out, "%i [label=\"'%s'\"];\n", node_count, host->name);
+=======
+      fprintf(out, "%i [label=%s];\n", node_count, host->name);
+>>>>>>> added comments
       fprintf(out, "%i -> %i;\n", current, node_count++);
       ast_draw_node(host->children[EXPR], current, out);
       ast_draw_node(host->children[NEXT_STAT], parent, out);
       break;
+<<<<<<< HEAD
     case _skip_stat:                   /* visit skip statement node */
       fprintf(out, "%i [label=\"Skip\\nlabel: %s\"];\n", current, AST_LABEL(host));
       fprintf(out, "%i -> %i;\n", parent, current);
@@ -57,28 +73,57 @@ void ast_draw_node(ast_node* host, int parent, FILE* out) {
       break;
     case _if_then_stat:                /* visit if-then statement node */
       fprintf(out, "%i [label=\"If-Then\\nlabel:  %s\"];\n", current, AST_LABEL(host));
+=======
+    case _skip_stat:
+      fprintf(out, "%i [label=\"Skip: %s\"];\n", current,
+              (host->label?host->label:""));
+      fprintf(out, "%i -> %i;\n", parent, current);
+      ast_draw_node(host->children[NEXT_STAT], parent, out);
+      break;
+    case _if_then_stat:
+      fprintf(out, "%i [label=\"If-Then: %s\"];\n", current,
+              (host->label?host->label:""));
+>>>>>>> added comments
       fprintf(out, "%i -> %i;\n", parent, current);
       ast_draw_node(host->children[EXPR], current, out);
       ast_draw_node(host->children[BLOCK1], current, out);
       ast_draw_node(host->children[NEXT_STAT], current, out);
       break;
+<<<<<<< HEAD
     case _if_else_stat:                /* visit if-then-else statement node */
       fprintf(out, "%i [label=\"If-Then\\nlabel:  %s\"];\n", current, AST_LABEL(host));
+=======
+    case _if_else_stat:
+      fprintf(out, "%i [label=\"If-Then: %s\"];\n", current,
+              (host->label?host->label:""));
+>>>>>>> added comments
       fprintf(out, "%i -> %i;\n", parent, current);
       ast_draw_node(host->children[EXPR], current, out);
       ast_draw_node(host->children[BLOCK1], current, out);
       ast_draw_node(host->children[BLOCK2], current, out);
       ast_draw_node(host->children[NEXT_STAT], parent, out);
       break;
+<<<<<<< HEAD
     case _while_stat:                  /* visit while statement node */
       fprintf(out, "%i [label=\"While\\nlabel:  %s\"];\n", current, AST_LABEL(host));
+=======
+    case _while_stat:
+      fprintf(out, "%i [label=\"While: %s\"];\n", current,
+              (host->label?host->label:""));
+>>>>>>> added comments
       fprintf(out, "%i -> %i;\n", parent, current);
       ast_draw_node(host->children[EXPR], current, out);
       ast_draw_node(host->children[BLOCK1], current, out);
       ast_draw_node(host->children[NEXT_STAT], parent, out);
       break;
+<<<<<<< HEAD
     case _await_stat:                  /* visit await statement node */
       fprintf(out, "%i [label=\"Await\\nlabel:  %s\"];\n", current, AST_LABEL(host));
+=======
+    case _await_stat:
+      fprintf(out, "%i [label=\"Await: %s\"];\n", current,
+              (host->label?host->label:""));
+>>>>>>> added comments
       fprintf(out, "%i -> %i;\n", parent, current);
       ast_draw_node(host->children[EXPR], current, out);
       ast_draw_node(host->children[NEXT_STAT], parent, out);
@@ -86,7 +131,11 @@ void ast_draw_node(ast_node* host, int parent, FILE* out) {
     case _id_expr:                     /* visit id expression node */
       fprintf(out, "%i [label=ID];\n", current);
       fprintf(out, "%i -> %i;\n", parent, current);
+<<<<<<< HEAD
       fprintf(out, "%i [label=\"'%s'\"];\n", node_count, host->name);
+=======
+      fprintf(out, "%i [label=%s];\n", node_count, host->name);
+>>>>>>> added comments
       fprintf(out, "%i -> %i;\n", current, node_count++);
       break;
     case _lit_expr:                    /* visit literal expression node */
@@ -127,7 +176,11 @@ void ast_draw_node(ast_node* host, int parent, FILE* out) {
   }
 }
 
+<<<<<<< HEAD
 /* initiate traversal of AST */
+=======
+/* initiate traversal */
+>>>>>>> added comments
 void ast_draw_tree(ast_node* tree, FILE* out) {
   fprintf(out, "digraph {\n");
   ast_draw_node(tree, 0, out);
