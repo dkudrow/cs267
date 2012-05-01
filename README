@@ -1,0 +1,32 @@
+README
+
+Conents:
+Parser and abstract syntax tree for toy language. To be used as a front end
+for model checking project.
+
+Grammar:
+program       ->      declaration* processes
+declaration   ->      ID ";"
+processes     ->      process ["||" processes]
+process       ->      lstatement+
+block         ->      lstatement
+              ->      "{" lstatement+ "}"
+lstatement    ->      [ID ":"] statement
+statement     ->      ID ":=" expression ";"
+              ->      "skip" ";"
+              ->      "if" "(" expression ")" "then" block ["else" block]
+              ->      "while" "(" expression ")" "do" block
+              ->      "await" "(" expression ")" ";"
+expression    ->      ! expression
+              ->      expression & expression
+              ->      expression | expression
+              ->      expression => expression
+              ->      expression = expression
+              ->      "true"
+              ->      "false"
+              ->      ID
+
+Notes:
+  -comments are initiated by the '#' character and extend until the end of the
+   line.
+  -binary operators have equal precedence and are left associative.

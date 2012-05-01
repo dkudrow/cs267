@@ -1,0 +1,163 @@
+/* ast2.c
+ * Written by Daniel Kudrow, 04/30/12
+ * Last updated 04/30/12
+ *
+ * abstract syntax tree
+ */
+
+# include <stdlib.h>
+
+#include "ast.h"
+
+ast_node* ast_init() {
+  ast_node* new_prog_node = malloc(sizeof(ast_node));
+  new_prog_node->tag = _prog;
+  new_prog_node->children[DECL_LIST_HEAD] = NULL;
+  new_prog_node->children[DECL_LIST_TAIL] = NULL;
+  new_prog_node->children[PROC_LIST_HEAD] = NULL;
+  new_prog_node->children[PROC_LIST_HEAD] = NULL;
+  return new_prog_node;
+}
+
+void ast_push_decl(ast_node* prog_node, char* name) {
+  ast_node* new_decl_node = malloc(sizeof(ast_node));
+  new_decl_node->tag = _decl;
+  new_decl_node->name = name;
+  new_decl_node->children[NEXT_DECL] = NULL;
+  if (prog_node->children[DECL_LIST_TAIL])
+    prog_node->children[DECL_LIST_TAIL]->children[NEXT_DECL] = new_decl_node;
+  else
+    prog_node->children[DECL_LIST_HEAD] = new_decl_node;
+  prog_node->children[DECL_LIST_TAIL] = new_decl_node;
+}
+
+ast_node* ast_block_init() {
+  ast_node* new_block_node = malloc(sizeof(ast_node));
+  new_block_node->tag = _block;
+  new_block_node->children[STAT_LIST_HEAD] = NULL;
+  new_block_node->children[STAT_LIST_TAIL] = NULL;
+  return new_block_node;
+}
+
+ast_node* ast_push_proc(ast_node* prog_node) {
+  ast_node* new_proc_node = malloc(sizeof(ast_node));
+  ast_node* new_block_node = ast_block_init();
+  new_proc_node->tag = _proc;
+  new_proc_node->children[BLOCK] = new_block_node;
+  new_proc_node->children[NEXT_PROC] = NULL;
+  if (prog_node->children[PROC_LIST_TAIL])
+    prog_node->children[PROC_LIST_TAIL]->children[NEXT_PROC] = new_proc_node;
+  else
+    prog_node->children[PROC_LIST_HEAD] = new_proc_node;
+  prog_node->children[PROC_LIST_TAIL] = new_proc_node;
+  return new_block_node;
+}
+
+ast_node* ast_stat_init(ast_node* block, char* label) {
+  ast_node* new_stat_node = malloc(sizeof(ast_node));
+  new_stat_node->label = label;
+  new_stat_node->children[NEXT_STAT] = NULL;
+  if (block->children[STAT_LIST_TAIL])
+    block->children[STAT_LIST_TAIL]->children[NEXT_STAT] = new_stat_node;
+  else
+    block->children[STAT_LIST_HEAD] = new_stat_node;
+  block->children[STAT_LIST_TAIL] = new_stat_node;
+  return new_stat_node;
+}
+  
+void ast_push_assign_stat(ast_node* block, char* label, char* name,
+                          ast_node* expr) {
+  ast_node* new_stat_node = ast_stat_init(block, label);
+  new_stat_node->tag = _assign_stat;
+  new_stat_node->name = name;
+  new_stat_node->children[EXPR] = expr;
+}
+
+void ast_push_skip_stat(ast_node* block, char* label) {
+  ast_node* new_stat_node = ast_stat_init(block, label);
+  new_stat_node->tag = _skip_stat;
+}
+
+void ast_push_if_then_stat(ast_node* block, char* label, ast_node* expr,
+                           ast_node* block1) {
+  ast_node* new_stat_node = ast_stat_init(block, label);
+  new_stat_node->tag = _if_then_stat;
+  new_stat_node->children[EXPR] = expr;
+  new_stat_node->children[BLOCK1] = block1;
+}
+
+void ast_push_if_else_stat(ast_node* block, char* label, ast_node* expr,
+                           ast_node* block1, ast_node* block2) {
+  ast_node* new_stat_node = ast_stat_init(block, label);
+  new_stat_node->tag = _if_else_stat;
+  new_stat_node->children[EXPR] = expr;
+  new_stat_node->children[BLOCK1] = block1;
+  new_stat_node->children[BLOCK2] = block2;
+}
+
+void ast_push_while_stat(ast_node* block, char* label, ast_node* expr,
+                         ast_node* block1) {
+  ast_node* new_stat_node = ast_stat_init(block, label);
+  new_stat_node->tag = _while_stat;
+  new_stat_node->children[EXPR] = expr;
+  new_stat_node->children[BLOCK1] = block1;
+}
+
+void ast_push_await_stat(ast_node* block, char* label, ast_node* expr) {
+  ast_node* new_stat_node = ast_stat_init(block, label);
+  new_stat_node->tag = _await_stat;
+  new_stat_node->children[EXPR] = expr;
+}
+
+ast_node* ast_push_id_expr(char* name) {
+  ast_node* new_expr_node = malloc(sizeof(ast_node));
+  new_expr_node->tag = _id_expr;
+  new_expr_node->name = name;
+  return new_expr_node;
+}
+
+ast_node* ast_push_lit_expr(int val) {
+  ast_node* new_expr_node = malloc(sizeof(ast_node));
+  new_expr_node->tag = _lit_expr;
+  new_expr_node->val = val;
+  return new_expr_node;
+}
+
+ast_node* ast_push_not_expr(ast_node* expr1) {
+  ast_node* new_expr_node = malloc(sizeof(ast_node));
+  new_expr_node->tag = _not_expr;
+  new_expr_node->children[EXPR1] = expr1;
+  return new_expr_node;
+}
+
+ast_node* ast_push_and_expr(ast_node* expr1, ast_node* expr2) {
+  ast_node* new_expr_node = malloc(sizeof(ast_node));
+  new_expr_node->tag = _and_expr;
+  new_expr_node->children[EXPR1] = expr1;
+  new_expr_node->children[EXPR2] = expr2;
+  return new_expr_node;
+}
+
+ast_node* ast_push_or_expr(ast_node* expr1, ast_node* expr2) {
+  ast_node* new_expr_node = malloc(sizeof(ast_node));
+  new_expr_node->tag = _or_expr;
+  new_expr_node->children[EXPR1] = expr1;
+  new_expr_node->children[EXPR2] = expr2;
+  return new_expr_node;
+}
+
+ast_node* ast_push_eq_expr(ast_node* expr1, ast_node* expr2) {
+  ast_node* new_expr_node = malloc(sizeof(ast_node));
+  new_expr_node->tag = _eq_expr;
+  new_expr_node->children[EXPR1] = expr1;
+  new_expr_node->children[EXPR2] = expr2;
+  return new_expr_node;
+}
+
+ast_node* ast_push_impl_expr(ast_node* expr1, ast_node* expr2) {
+  ast_node* new_expr_node = malloc(sizeof(ast_node));
+  new_expr_node->tag = _impl_expr;
+  new_expr_node->children[EXPR1] = expr1;
+  new_expr_node->children[EXPR2] = expr2;
+  return new_expr_node;
+}
