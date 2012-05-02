@@ -8,6 +8,9 @@
 #ifndef AST_H
 #define AST_H
 
+/* the following macros specify the order of children in each type of node */
+/* the children are indexed by 'node->children[MACRO]' */
+
 /* program node children */
 #define DECL_LIST_HEAD 0
 #define DECL_LIST_TAIL 1
@@ -35,13 +38,16 @@
 #define EXPR1          0
 #define EXPR2          1
 
+/* generic AST node type */
 typedef struct _ast_node {
+  /* the tag member spcifies what type of AST node is being referenced */
   enum {
     _undef = 0, _prog, _decl, _proc, _block, _assign_stat, _skip_stat,
     _if_then_stat, _if_else_stat, _while_stat, _await_stat, _id_expr,
     _lit_expr, _not_expr, _and_expr, _or_expr, _eq_expr, _impl_expr
   } tag;
-  
+
+  /* generic members common to all AST nodes */
   char* label;
   char* name;
   int val;
@@ -49,7 +55,7 @@ typedef struct _ast_node {
 } ast_node;
 
 
-/* abstract syntax tree methods */
+/* AST methods */
 ast_node* ast_init();
 ast_node* ast_block_init();
 void ast_push_decl(ast_node* prog_node, char* name);

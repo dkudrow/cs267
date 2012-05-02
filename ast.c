@@ -9,6 +9,8 @@
 
 #include "ast.h"
 
+/* create a new AST */
+/* returns a pointer to an empty program node */
 ast_node* ast_init() {
   ast_node* new_prog_node = malloc(sizeof(ast_node));
   new_prog_node->tag = _prog;
@@ -19,6 +21,7 @@ ast_node* ast_init() {
   return new_prog_node;
 }
 
+/* push a new declaration node to an existing program node */
 void ast_push_decl(ast_node* prog_node, char* name) {
   ast_node* new_decl_node = malloc(sizeof(ast_node));
   new_decl_node->tag = _decl;
@@ -31,6 +34,8 @@ void ast_push_decl(ast_node* prog_node, char* name) {
   prog_node->children[DECL_LIST_TAIL] = new_decl_node;
 }
 
+/* create a new block node */
+/* returns a pointer to an empty block node */
 ast_node* ast_block_init() {
   ast_node* new_block_node = malloc(sizeof(ast_node));
   new_block_node->tag = _block;
@@ -39,6 +44,8 @@ ast_node* ast_block_init() {
   return new_block_node;
 }
 
+/* push a new process to an existing program node */
+/* returns a pointer to the new process node's block child */
 ast_node* ast_push_proc(ast_node* prog_node) {
   ast_node* new_proc_node = malloc(sizeof(ast_node));
   ast_node* new_block_node = ast_block_init();
@@ -53,6 +60,8 @@ ast_node* ast_push_proc(ast_node* prog_node) {
   return new_block_node;
 }
 
+/* create a new statement node and push it onto a block node */
+/* returns a pointer to the new statement node */
 ast_node* ast_stat_init(ast_node* block, char* label) {
   ast_node* new_stat_node = malloc(sizeof(ast_node));
   new_stat_node->label = label;
@@ -64,7 +73,8 @@ ast_node* ast_stat_init(ast_node* block, char* label) {
   block->children[STAT_LIST_TAIL] = new_stat_node;
   return new_stat_node;
 }
-  
+
+/* push an assigment statement onto a block node */
 void ast_push_assign_stat(ast_node* block, char* label, char* name,
                           ast_node* expr) {
   ast_node* new_stat_node = ast_stat_init(block, label);
@@ -73,11 +83,13 @@ void ast_push_assign_stat(ast_node* block, char* label, char* name,
   new_stat_node->children[EXPR] = expr;
 }
 
+/* push a skip statement onto a block node */
 void ast_push_skip_stat(ast_node* block, char* label) {
   ast_node* new_stat_node = ast_stat_init(block, label);
   new_stat_node->tag = _skip_stat;
 }
 
+/* push an if-then statement onto a block node */
 void ast_push_if_then_stat(ast_node* block, char* label, ast_node* expr,
                            ast_node* block1) {
   ast_node* new_stat_node = ast_stat_init(block, label);
@@ -86,6 +98,7 @@ void ast_push_if_then_stat(ast_node* block, char* label, ast_node* expr,
   new_stat_node->children[BLOCK1] = block1;
 }
 
+/* push an if-then-else statement onto a block node */
 void ast_push_if_else_stat(ast_node* block, char* label, ast_node* expr,
                            ast_node* block1, ast_node* block2) {
   ast_node* new_stat_node = ast_stat_init(block, label);
@@ -95,6 +108,7 @@ void ast_push_if_else_stat(ast_node* block, char* label, ast_node* expr,
   new_stat_node->children[BLOCK2] = block2;
 }
 
+/* push a while statement onto a block node */
 void ast_push_while_stat(ast_node* block, char* label, ast_node* expr,
                          ast_node* block1) {
   ast_node* new_stat_node = ast_stat_init(block, label);
@@ -103,12 +117,15 @@ void ast_push_while_stat(ast_node* block, char* label, ast_node* expr,
   new_stat_node->children[BLOCK1] = block1;
 }
 
+/* push an await statement onto a block node */
 void ast_push_await_stat(ast_node* block, char* label, ast_node* expr) {
   ast_node* new_stat_node = ast_stat_init(block, label);
   new_stat_node->tag = _await_stat;
   new_stat_node->children[EXPR] = expr;
 }
 
+/* create a new id expression */
+/* returns a pointer to the new (orphan) expression node */
 ast_node* ast_push_id_expr(char* name) {
   ast_node* new_expr_node = malloc(sizeof(ast_node));
   new_expr_node->tag = _id_expr;
@@ -116,6 +133,8 @@ ast_node* ast_push_id_expr(char* name) {
   return new_expr_node;
 }
 
+/* create a new literal expression */
+/* returns a pointer to the new (orphan) expression node */
 ast_node* ast_push_lit_expr(int val) {
   ast_node* new_expr_node = malloc(sizeof(ast_node));
   new_expr_node->tag = _lit_expr;
@@ -123,6 +142,8 @@ ast_node* ast_push_lit_expr(int val) {
   return new_expr_node;
 }
 
+/* create a new not expression */
+/* returns a pointer to the new (orphan) expression node */
 ast_node* ast_push_not_expr(ast_node* expr1) {
   ast_node* new_expr_node = malloc(sizeof(ast_node));
   new_expr_node->tag = _not_expr;
@@ -130,6 +151,8 @@ ast_node* ast_push_not_expr(ast_node* expr1) {
   return new_expr_node;
 }
 
+/* create a new and expression */
+/* returns a pointer to the new (orphan) expression node */
 ast_node* ast_push_and_expr(ast_node* expr1, ast_node* expr2) {
   ast_node* new_expr_node = malloc(sizeof(ast_node));
   new_expr_node->tag = _and_expr;
@@ -138,6 +161,8 @@ ast_node* ast_push_and_expr(ast_node* expr1, ast_node* expr2) {
   return new_expr_node;
 }
 
+/* create a new or expression */
+/* returns a pointer to the new (orphan) expression node */
 ast_node* ast_push_or_expr(ast_node* expr1, ast_node* expr2) {
   ast_node* new_expr_node = malloc(sizeof(ast_node));
   new_expr_node->tag = _or_expr;
@@ -146,6 +171,8 @@ ast_node* ast_push_or_expr(ast_node* expr1, ast_node* expr2) {
   return new_expr_node;
 }
 
+/* create a new equality expression */
+/* returns a pointer to the new (orphan) expression node */
 ast_node* ast_push_eq_expr(ast_node* expr1, ast_node* expr2) {
   ast_node* new_expr_node = malloc(sizeof(ast_node));
   new_expr_node->tag = _eq_expr;
@@ -154,6 +181,8 @@ ast_node* ast_push_eq_expr(ast_node* expr1, ast_node* expr2) {
   return new_expr_node;
 }
 
+/* create a new implication expression */
+/* returns a pointer to the new (orphan) expression node */
 ast_node* ast_push_impl_expr(ast_node* expr1, ast_node* expr2) {
   ast_node* new_expr_node = malloc(sizeof(ast_node));
   new_expr_node->tag = _impl_expr;
