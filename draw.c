@@ -8,6 +8,7 @@
 #include <stdio.h>
 
 #include "ast.h"
+#include "cfg.h"
 
 /* traverse an AST and output GraphViz dot code for each node */
 void ast_draw_node(ast_node* host, int parent, FILE* out) {
@@ -130,4 +131,36 @@ void ast_draw_tree(ast_node* tree, FILE* out) {
   fprintf(out, "digraph {\n");
   ast_draw_node(tree, 0, out);
   fprintf(out, "}\n");
+}
+
+char* tag_to_string(int tag) {
+  switch(tag) {
+    case _assign_stat:
+      return "assign";
+    case _skip_stat:
+      return "skip";
+    case _if_then_stat:
+      return "if then";
+    case _if_else_stat:
+      return "if else";
+    case _while_stat:
+      return "while";
+    case _await_stat:
+      return "await";
+  }
+}
+
+void cfg_draw_node(cfg_node* host, FILE* out, int parent) {
+  if (!host) return;
+  fprintf(out, "%i [label=%s];\n", host->block_id, tag_to_string(host->node->tag));
+  if (parent)
+    fprintf(out, "%i -> %i;\n", parent, host->block_id);
+  if (host->succ[0] == host)
+    fprintf(out, "%i -> %i;\n", host->block_id, host->block_id);
+  else
+    cfg_draw_node(host->succ[0], out, host->block_id);
+  if (host->succ[1] == host)
+    fprintf(out, "%i -> %i;\n", host->block_id, host->block_id);
+  else
+    cfg_draw_node(host->succ[1], out, host->block_id);
 }

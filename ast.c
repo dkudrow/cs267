@@ -1,4 +1,4 @@
-/* ast2.c
+/* ast.c
  * Written by Daniel Kudrow, 04/30/12
  * Last updated 04/30/12
  *

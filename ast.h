@@ -40,7 +40,7 @@
 
 /* generic AST node type */
 typedef struct _ast_node {
-  /* the tag member spcifies what type of AST node is being referenced */
+  /* the tag member sepcifies what type of AST node is being referenced */
   enum {
     _undef = 0, _prog, _decl, _proc, _block, _assign_stat, _skip_stat,
     _if_then_stat, _if_else_stat, _while_stat, _await_stat, _id_expr,
