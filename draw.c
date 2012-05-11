@@ -133,27 +133,35 @@ void ast_draw_tree(ast_node* tree, FILE* out) {
   fprintf(out, "}\n");
 }
 
-char* tag_to_string(int tag) {
-  switch(tag) {
+void cfg_to_string(cfg_node* host, FILE* out) {
+  switch(host->node->tag) {
     case _assign_stat:
-      return "assign";
+      fprintf(out, "\"assign: %s", (host->node->label?host->node->label:""));
+      break;
     case _skip_stat:
-      return "skip";
+      fprintf(out, "\"skip: %s", (host->node->label?host->node->label:""));
+      break;
     case _if_then_stat:
-      return "if then";
+      fprintf(out, "\"if then: %s", (host->node->label?host->node->label:""));
+      break;
     case _if_else_stat:
-      return "if else";
+      fprintf(out, "\"if else: %s", (host->node->label?host->node->label:""));
+      break;
     case _while_stat:
-      return "while";
+      fprintf(out, "\"while: %s", (host->node->label?host->node->label:""));
+      break;
     case _await_stat:
-      return "await";
+      fprintf(out, "\"await: %s", (host->node->label?host->node->label:""));
+      break;
   }
 }
 
 void cfg_draw_node(cfg_node* host, FILE* out, int parent) {
   if (!host) return;
-  fprintf(out, "%i [label=%s];\n", host->block_id, tag_to_string(host->node->tag));
-  if (parent)
+  fprintf(out, "%i [label=", host->block_id);
+  cfg_to_string(host, out);
+  fprintf(out, "\"];\n");
+  if (parent >= 0)
     fprintf(out, "%i -> %i;\n", parent, host->block_id);
   if (host->succ[0] == host)
     fprintf(out, "%i -> %i;\n", host->block_id, host->block_id);
@@ -163,4 +171,10 @@ void cfg_draw_node(cfg_node* host, FILE* out, int parent) {
     fprintf(out, "%i -> %i;\n", host->block_id, host->block_id);
   else
     cfg_draw_node(host->succ[1], out, host->block_id);
+}
+
+void cfg_draw_graph(cfg_node* host, FILE* out) {
+  fprintf(out, "digraph {\n");
+  cfg_draw_node(host, stdout, -1);
+  fprintf(out, "}\n");
 }

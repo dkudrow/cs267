@@ -14,7 +14,7 @@
 #include "cfg.h"
 
 void ast_draw_tree(ast_node* tree, FILE* out);
-void cfg_draw_node(cfg_node* host, FILE* out, int parent);
+void cfg_draw_graph(cfg_node* host, FILE* out);
 
 /* define terminal tokens */
 typedef enum {
@@ -377,6 +377,6 @@ ast_node* parse() {
 void main() {
   ast_node* tree = parse();
   cfg_node* cfg = cfg_init(tree);
-  cfg_draw_node(cfg, stdout, 0);
+  cfg_draw_graph(cfg, stdout);
 //   ast_draw_tree(tree, stdout);
 }

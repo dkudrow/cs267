@@ -22,7 +22,7 @@ cfg_node* cfg_mk_assign_stat(ast_node* host, cfg_node* succ, int id) {
   cfg_node* new_cfg_node = malloc(sizeof(cfg_node));
   new_cfg_node->node = host;
   new_cfg_node->block_id = id;
-  new_cfg_node->succ[CONTINUE] = ast_to_cfg(host->children[NEXT_STAT], succ);
+  new_cfg_node->succ[CONTINUE] = succ;
   return new_cfg_node;
 }
 
@@ -37,7 +37,7 @@ cfg_node* cfg_mk_if_then_stat(ast_node* host, cfg_node* succ, int id) {
   new_cfg_node->node = host;
   new_cfg_node->block_id = id;
   new_cfg_node->succ[CFG_IF] = ast_to_cfg(host->children[BLOCK1], succ);
-  new_cfg_node->succ[CONTINUE] = ast_to_cfg(host->children[NEXT_STAT], succ);
+  new_cfg_node->succ[CONTINUE] = succ;
   return new_cfg_node;
 }
 
@@ -55,7 +55,7 @@ cfg_node* cfg_mk_while_stat(ast_node* host, cfg_node* succ, int id) {
   new_cfg_node->node = host;
   new_cfg_node->block_id = id;
   new_cfg_node->succ[CFG_WHILE] = ast_to_cfg(host->children[BLOCK1], new_cfg_node);
-  new_cfg_node->succ[CONTINUE] = ast_to_cfg(host->children[NEXT_STAT], succ);
+  new_cfg_node->succ[CONTINUE] = succ;
   return new_cfg_node;
 }
 
@@ -64,7 +64,7 @@ cfg_node* cfg_mk_await_stat(ast_node* host, cfg_node* succ, int id) {
   new_cfg_node->node = host;
   new_cfg_node->block_id = id;
   new_cfg_node->succ[CFG_AWAIT] = new_cfg_node;
-  new_cfg_node->succ[CONTINUE] = ast_to_cfg(host->children[NEXT_STAT], succ);
+  new_cfg_node->succ[CONTINUE] = succ;
   return new_cfg_node;
 }
 
