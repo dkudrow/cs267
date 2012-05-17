@@ -1,6 +1,6 @@
 /* ast.c
  * Written by Daniel Kudrow, 04/30/12
- * Last updated 04/30/12
+ * Last updated 05/17/12
  *
  * abstract syntax tree
  */
@@ -62,9 +62,10 @@ ast_node* ast_push_proc(ast_node* prog_node) {
 
 /* create a new statement node and push it onto a block node */
 /* returns a pointer to the new statement node */
-ast_node* ast_stat_init(ast_node* block, char* label) {
+ast_node* ast_stat_init(ast_node* block, char* label, int id) {
   ast_node* new_stat_node = malloc(sizeof(ast_node));
   new_stat_node->label = label;
+  new_stat_node->id = id;
   new_stat_node->children[NEXT_STAT] = NULL;
   if (block->children[STAT_LIST_TAIL])
     block->children[STAT_LIST_TAIL]->children[NEXT_STAT] = new_stat_node;
@@ -76,23 +77,23 @@ ast_node* ast_stat_init(ast_node* block, char* label) {
 
 /* push an assigment statement onto a block node */
 void ast_push_assign_stat(ast_node* block, char* label, char* name,
-                          ast_node* expr) {
-  ast_node* new_stat_node = ast_stat_init(block, label);
+                          ast_node* expr, int id) {
+  ast_node* new_stat_node = ast_stat_init(block, label, id);
   new_stat_node->tag = _assign_stat;
   new_stat_node->name = name;
   new_stat_node->children[EXPR] = expr;
 }
 
 /* push a skip statement onto a block node */
-void ast_push_skip_stat(ast_node* block, char* label) {
-  ast_node* new_stat_node = ast_stat_init(block, label);
+void ast_push_skip_stat(ast_node* block, char* label, int id) {
+  ast_node* new_stat_node = ast_stat_init(block, label, id);
   new_stat_node->tag = _skip_stat;
 }
 
 /* push an if-then statement onto a block node */
 void ast_push_if_then_stat(ast_node* block, char* label, ast_node* expr,
-                           ast_node* block1) {
-  ast_node* new_stat_node = ast_stat_init(block, label);
+                           ast_node* block1, int id) {
+  ast_node* new_stat_node = ast_stat_init(block, label, id);
   new_stat_node->tag = _if_then_stat;
   new_stat_node->children[EXPR] = expr;
   new_stat_node->children[BLOCK1] = block1;
@@ -100,8 +101,8 @@ void ast_push_if_then_stat(ast_node* block, char* label, ast_node* expr,
 
 /* push an if-then-else statement onto a block node */
 void ast_push_if_else_stat(ast_node* block, char* label, ast_node* expr,
-                           ast_node* block1, ast_node* block2) {
-  ast_node* new_stat_node = ast_stat_init(block, label);
+                           ast_node* block1, ast_node* block2, int id) {
+  ast_node* new_stat_node = ast_stat_init(block, label, id);
   new_stat_node->tag = _if_else_stat;
   new_stat_node->children[EXPR] = expr;
   new_stat_node->children[BLOCK1] = block1;
@@ -110,16 +111,17 @@ void ast_push_if_else_stat(ast_node* block, char* label, ast_node* expr,
 
 /* push a while statement onto a block node */
 void ast_push_while_stat(ast_node* block, char* label, ast_node* expr,
-                         ast_node* block1) {
-  ast_node* new_stat_node = ast_stat_init(block, label);
+                         ast_node* block1, int id) {
+  ast_node* new_stat_node = ast_stat_init(block, label, id);
   new_stat_node->tag = _while_stat;
   new_stat_node->children[EXPR] = expr;
   new_stat_node->children[BLOCK1] = block1;
 }
 
 /* push an await statement onto a block node */
-void ast_push_await_stat(ast_node* block, char* label, ast_node* expr) {
-  ast_node* new_stat_node = ast_stat_init(block, label);
+void ast_push_await_stat(ast_node* block, char* label, ast_node* expr,
+                         int id) {
+  ast_node* new_stat_node = ast_stat_init(block, label, id);
   new_stat_node->tag = _await_stat;
   new_stat_node->children[EXPR] = expr;
 }

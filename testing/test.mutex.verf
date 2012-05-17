@@ -1,0 +1,16 @@
+a;
+b;
+turn;
+proc1:
+while (true) do {
+  out: a := true; turn := true;
+  wait: await (!b | !turn );
+  cs: a := false;
+}
+||
+proc2:
+while (true) do {
+  out: b := true; turn := false;
+  wait: await (!a | turn);
+  cs: b := false;
+}

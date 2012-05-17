@@ -1,16 +1,6 @@
-a;
-b;
-turn;
-proc1:
-while (true) do {
-  out: a := true; turn := true;
-  wait: await (!b | !turn );
-  cs: a := false;
+l1: a:=true;
+l2: while (true) do {
+  l3: b:=false;
+  l4: c:=false;
 }
-||
-proc2:
-while (true) do {
-  out: b := true; turn := false;
-  wait: await (!a | turn);
-  cs: b := false;
-}
+l5: d:=true;

@@ -1,6 +1,6 @@
 /* parser.c
  * Written by Daniel Kudrow, 04/15/12
- * Last updated 04/28/12
+ * Last updated 05/17/12
  *
  * lexer and parser
  */
@@ -11,10 +11,6 @@
 #include <ctype.h>
 
 #include "ast.h"
-#include "cfg.h"
-
-void ast_draw_tree(ast_node* tree, FILE* out);
-void cfg_draw_graph(cfg_node* host, FILE* out);
 
 /* define terminal tokens */
 typedef enum {
@@ -214,7 +210,7 @@ void expect(token_t expected) {
     syntax_error(token_to_string(expected));
 }
 
-/* forward declarations */
+/* forward declarations for parser */
 void parse_program(ast_node* program);
 void parse_declarations(ast_node* program);
 void parse_processes(ast_node* program);
@@ -275,6 +271,8 @@ void parse_statements(ast_node* block) {
 
 /* lstatement -> ['ID' ':'] statement */
 int parse_lstatement(ast_node* block) {
+  static int count = 0;                /* unique ID for each statement */
+  int current_id = count++;            /* remember ID before parsing a block */
   char* label = (char*)NULL;
   ast_node* expr;
   ast_node* block1, *block2;
@@ -284,11 +282,11 @@ int parse_lstatement(ast_node* block) {
     char* name = strdup(lexeme);       /* save lexeme before advancing */
     expr = parse_expression();
     expect(T_SEMI);
-    ast_push_assign_stat(block, label, name, expr);
+    ast_push_assign_stat(block, label, name, expr, current_id);
     return 1;
   } else if (match(T_SKIP, T_UNDEF)) { /* parse skip statement */
     expect(T_SEMI);
-    ast_push_skip_stat(block, label);
+    ast_push_skip_stat(block, label, current_id);
     return 1;
   } else if (match(T_IF, T_UNDEF)) {   /* parse if-then-else statement */
     expect(T_L_PAREN);
@@ -298,9 +296,9 @@ int parse_lstatement(ast_node* block) {
     block1 = parse_block();
     if (match(T_ELSE, T_UNDEF)) {      /* create else node */
       block2 = parse_block();
-      ast_push_if_else_stat(block, label, expr, block1, block2);
+      ast_push_if_else_stat(block, label, expr, block1, block2, current_id);
     } else
-      ast_push_if_then_stat(block, label, expr, block1);
+      ast_push_if_then_stat(block, label, expr, block1, current_id);
     return 1;
   } else if (match(T_WHILE, T_UNDEF)) {/* parse while statement */
     expect(T_L_PAREN);
@@ -308,17 +306,19 @@ int parse_lstatement(ast_node* block) {
     expect(T_R_PAREN);
     expect(T_DO);
     block1 = parse_block();
-    ast_push_while_stat(block, label, expr, block1);
+    ast_push_while_stat(block, label, expr, block1, current_id);
     return 1;
   } else if (match(T_AWAIT, T_UNDEF)) {/* parse await statement */
     expect(T_L_PAREN);
     expr = parse_expression();
     expect(T_R_PAREN);
     expect(T_SEMI);
-    ast_push_await_stat(block, label, expr);
+    ast_push_await_stat(block, label, expr, current_id);
     return 1;
-  } else
+  } else {
+    --count;
     return 0;
+  }
 }
 
 /* expression -> base expression_ */
@@ -372,11 +372,4 @@ ast_node* parse() {
   lookahead_2 = get_next_token(stdin);
   parse_program(tree);
   return tree;
-}
-
-void main() {
-  ast_node* tree = parse();
-  cfg_node* cfg = cfg_init(tree);
-  cfg_draw_graph(cfg, stdout);
-//   ast_draw_tree(tree, stdout);
 }

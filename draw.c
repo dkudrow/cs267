@@ -1,14 +1,14 @@
 /* draw.c
  * Written by Daniel Kudrow, 04/30/12
- * Last updated 04/30/12
+ * Last updated 05/17/12
  *
  * visual representation of abstrat syntzx tree
  */
 
 #include <stdio.h>
 
-#include "ast.h"
 #include "cfg.h"
+/* ast.h is included in cfg.h so it is not explicitly included here */
 
 /* traverse an AST and output GraphViz dot code for each node */
 void ast_draw_node(ast_node* host, int parent, FILE* out) {
@@ -158,19 +158,19 @@ void cfg_to_string(cfg_node* host, FILE* out) {
 
 void cfg_draw_node(cfg_node* host, FILE* out, int parent) {
   if (!host) return;
-  fprintf(out, "%i [label=", host->block_id);
+  fprintf(out, "%i [label=", host->node->id);
   cfg_to_string(host, out);
   fprintf(out, "\"];\n");
   if (parent >= 0)
-    fprintf(out, "%i -> %i;\n", parent, host->block_id);
-  if (host->succ[0] == host)
-    fprintf(out, "%i -> %i;\n", host->block_id, host->block_id);
+    fprintf(out, "%i -> %i;\n", parent, host->node->id);
+  if (host->succ[0] && host->node->id >= host->succ[0]->node->id)
+    fprintf(out, "%i -> %i;\n", host->node->id, host->succ[0]->node->id);
   else
-    cfg_draw_node(host->succ[0], out, host->block_id);
-  if (host->succ[1] == host)
-    fprintf(out, "%i -> %i;\n", host->block_id, host->block_id);
+    cfg_draw_node(host->succ[0], out, host->node->id);
+  if (host->succ[1] && host->node->id >= host->succ[1]->node->id)
+    fprintf(out, "%i -> %i;\n", host->node->id, host->node->id);
   else
-    cfg_draw_node(host->succ[1], out, host->block_id);
+    cfg_draw_node(host->succ[1], out, host->node->id);
 }
 
 void cfg_draw_graph(cfg_node* host, FILE* out) {

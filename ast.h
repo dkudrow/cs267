@@ -1,12 +1,14 @@
-/* ast2.h
+/* ast.h
  * Written by Daniel Kudrow, 04/30/12
- * Last updated 04/30/12
+ * Last updated 05/17/12
  *
  * abstract syntax tree
  */
 
 #ifndef AST_H
 #define AST_H
+
+#include <stdio.h>
 
 /* the following macros specify the order of children in each type of node */
 /* the children are indexed by 'node->children[MACRO]' */
@@ -50,27 +52,30 @@ typedef struct _ast_node {
   /* generic members common to all AST nodes */
   char* label;
   char* name;
+  int id;
   int val;
   struct _ast_node* children[4];
 } ast_node;
 
 
 /* AST methods */
+void ast_draw_tree(ast_node* tree, FILE* out);
+ast_node* parse();
 ast_node* ast_init();
 ast_node* ast_block_init();
 void ast_push_decl(ast_node* prog_node, char* name);
 ast_node* ast_push_proc(ast_node* prog_node);
-ast_node* ast_stat_init(ast_node* block, char* label);
+ast_node* ast_stat_init(ast_node* block, char* label, int id);
 void ast_push_assign_stat(ast_node* block, char* label, char* name,
-                          ast_node* expr);
-void ast_push_skip_stat(ast_node* block, char* label);
+                          ast_node* expr, int id);
+void ast_push_skip_stat(ast_node* block, char* label, int id);
 void ast_push_if_then_stat(ast_node* block, char* label, ast_node* expr,
-                           ast_node* block1);
+                           ast_node* block1, int id);
 void ast_push_if_else_stat(ast_node* block, char* label, ast_node* expr,
-                           ast_node* block1, ast_node* block2);
+                           ast_node* block1, ast_node* block2, int id);
 void ast_push_while_stat(ast_node* block, char* label, ast_node* expr,
-                         ast_node* block1);  
-void ast_push_await_stat(ast_node* block, char* label, ast_node* expr);
+                         ast_node* block1, int id);  
+void ast_push_await_stat(ast_node* block, char* label, ast_node* expr, int id);
 ast_node* ast_push_id_expr(char* name);
 ast_node* ast_push_lit_expr(int val);
 ast_node* ast_push_not_expr(ast_node* expr1);
