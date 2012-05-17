@@ -8,7 +8,12 @@
 #include <stdio.h>
 
 #include "cfg.h"
+
 /* ast.h is included in cfg.h so it is not explicitly included here */
+
+/* if a node has a label, return it as a string */
+#define AST_LABEL(host) (host->label?host->label:"")
+#define CFG_LABEL(host) (host->node->label?host->node->label:"")
 
 /* traverse an AST and output GraphViz dot code for each node */
 void ast_draw_node(ast_node* host, int parent, FILE* out) {
@@ -36,8 +41,7 @@ void ast_draw_node(ast_node* host, int parent, FILE* out) {
       ast_draw_node(host->children[STAT_LIST_HEAD], parent, out);
       break;
     case _assign_stat:                 /* visit assignment statement node */
-      fprintf(out, "%i [label=\"Assign: %s\"];\n", current,
-              (host->label?host->label:""));
+      fprintf(out, "%i [label=\"Assign: %s\"];\n", current, AST_LABEL(host));
       fprintf(out, "%i -> %i;\n", parent, current);
       fprintf(out, "%i [label=%s];\n", node_count, host->name);
       fprintf(out, "%i -> %i;\n", current, node_count++);
@@ -45,22 +49,19 @@ void ast_draw_node(ast_node* host, int parent, FILE* out) {
       ast_draw_node(host->children[NEXT_STAT], parent, out);
       break;
     case _skip_stat:                   /* visit skip statement node */
-      fprintf(out, "%i [label=\"Skip: %s\"];\n", current,
-              (host->label?host->label:""));
+      fprintf(out, "%i [label=\"Skip: %s\"];\n", current, AST_LABEL(host));
       fprintf(out, "%i -> %i;\n", parent, current);
       ast_draw_node(host->children[NEXT_STAT], parent, out);
       break;
     case _if_then_stat:                /* visit if-then statement node */
-      fprintf(out, "%i [label=\"If-Then: %s\"];\n", current,
-              (host->label?host->label:""));
+      fprintf(out, "%i [label=\"If-Then: %s\"];\n", current, AST_LABEL(host));
       fprintf(out, "%i -> %i;\n", parent, current);
       ast_draw_node(host->children[EXPR], current, out);
       ast_draw_node(host->children[BLOCK1], current, out);
       ast_draw_node(host->children[NEXT_STAT], current, out);
       break;
     case _if_else_stat:                /* visit if-then-else statement node */
-      fprintf(out, "%i [label=\"If-Then: %s\"];\n", current,
-              (host->label?host->label:""));
+      fprintf(out, "%i [label=\"If-Then: %s\"];\n", current, AST_LABEL(host));
       fprintf(out, "%i -> %i;\n", parent, current);
       ast_draw_node(host->children[EXPR], current, out);
       ast_draw_node(host->children[BLOCK1], current, out);
@@ -68,16 +69,14 @@ void ast_draw_node(ast_node* host, int parent, FILE* out) {
       ast_draw_node(host->children[NEXT_STAT], parent, out);
       break;
     case _while_stat:                  /* visit while statement node */
-      fprintf(out, "%i [label=\"While: %s\"];\n", current,
-              (host->label?host->label:""));
+      fprintf(out, "%i [label=\"While: %s\"];\n", current, AST_LABEL(host));
       fprintf(out, "%i -> %i;\n", parent, current);
       ast_draw_node(host->children[EXPR], current, out);
       ast_draw_node(host->children[BLOCK1], current, out);
       ast_draw_node(host->children[NEXT_STAT], parent, out);
       break;
     case _await_stat:                  /* visit await statement node */
-      fprintf(out, "%i [label=\"Await: %s\"];\n", current,
-              (host->label?host->label:""));
+      fprintf(out, "%i [label=\"Await: %s\"];\n", current, AST_LABEL(host));
       fprintf(out, "%i -> %i;\n", parent, current);
       ast_draw_node(host->children[EXPR], current, out);
       ast_draw_node(host->children[NEXT_STAT], parent, out);
@@ -133,48 +132,59 @@ void ast_draw_tree(ast_node* tree, FILE* out) {
   fprintf(out, "}\n");
 }
 
+
+/* output string representation of AST statement node */
 void cfg_to_string(cfg_node* host, FILE* out) {
   switch(host->node->tag) {
     case _assign_stat:
-      fprintf(out, "\"assign: %s", (host->node->label?host->node->label:""));
+      fprintf(out, "\"ASSIGN\\n%s\\npc: %i", CFG_LABEL(host), host->node->id);
       break;
     case _skip_stat:
-      fprintf(out, "\"skip: %s", (host->node->label?host->node->label:""));
+      fprintf(out, "\"SKIP\\n%s\\npc: %i", CFG_LABEL(host), host->node->id);
       break;
     case _if_then_stat:
-      fprintf(out, "\"if then: %s", (host->node->label?host->node->label:""));
+      fprintf(out, "\"IF-THEN\\n%s\\npc: %i", CFG_LABEL(host), host->node->id);
       break;
     case _if_else_stat:
-      fprintf(out, "\"if else: %s", (host->node->label?host->node->label:""));
+      fprintf(out, "\"IF-ELSE\\n%s\\npc: %i", CFG_LABEL(host), host->node->id);
       break;
     case _while_stat:
-      fprintf(out, "\"while: %s", (host->node->label?host->node->label:""));
+      fprintf(out, "\"WHILE\\n%s\\npc: %i", CFG_LABEL(host), host->node->id);
       break;
     case _await_stat:
-      fprintf(out, "\"await: %s", (host->node->label?host->node->label:""));
+      fprintf(out, "\"AWAIT\\n%s\\npc: %i", CFG_LABEL(host), host->node->id);
       break;
   }
 }
 
-void cfg_draw_node(cfg_node* host, FILE* out, int parent) {
+/* draw CFG node and descend into succesors */
+void cfg_draw_node(cfg_node* host, FILE* out, int proc, int parent) {
   if (!host) return;
-  fprintf(out, "%i [label=", host->node->id);
+  fprintf(out, "%i%i [label=", proc, host->node->id);
   cfg_to_string(host, out);
   fprintf(out, "\"];\n");
-  if (parent >= 0)
-    fprintf(out, "%i -> %i;\n", parent, host->node->id);
+  if (parent >= 0)                     /* root node has no parent */
+    fprintf(out, "%i%i -> %i%i;\n", proc, parent, proc, host->node->id);
+  /* the following tests prevent cfg_draw_node from moving backwards */
+  /* through the control flow */
   if (host->succ[0] && host->node->id >= host->succ[0]->node->id)
-    fprintf(out, "%i -> %i;\n", host->node->id, host->succ[0]->node->id);
+    fprintf(out, "%i%i -> %i%i;\n", proc, host->node->id, proc, host->succ[0]->node->id);
   else
-    cfg_draw_node(host->succ[0], out, host->node->id);
+    cfg_draw_node(host->succ[0], out, proc, host->node->id);
   if (host->succ[1] && host->node->id >= host->succ[1]->node->id)
-    fprintf(out, "%i -> %i;\n", host->node->id, host->node->id);
+    fprintf(out, "%i%i -> %i%i;\n", proc, host->node->id, proc, host->succ[1]->node->id);
   else
-    cfg_draw_node(host->succ[1], out, host->node->id);
+    cfg_draw_node(host->succ[1], out, proc, host->node->id);
 }
 
+/* initiate traversal of CFG */
 void cfg_draw_graph(cfg_node* host, FILE* out) {
+  cfg_node* next = host;
+  int proc = 1; 
   fprintf(out, "digraph {\n");
-  cfg_draw_node(host, stdout, -1);
+  while (next) {
+    cfg_draw_node(next, stdout, proc++, -1);
+    next = next->next_proc;
+  }
   fprintf(out, "}\n");
 }

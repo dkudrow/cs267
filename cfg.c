@@ -88,6 +88,21 @@ cfg_node* ast_to_cfg(ast_node* host, cfg_node* succ) {
 
 cfg_node* cfg_init(ast_node* program) {
   if (!program) return NULL;
+  ast_node* ast_next_proc = program->children[PROC_LIST_HEAD];
+  cfg_node* cfg_list_head = ast_to_cfg(ast_next_proc->children[BLOCK], NULL);
+  cfg_node* cfg_next_proc = cfg_list_head;
+  ast_next_proc = ast_next_proc->children[NEXT_PROC];
+  while (ast_next_proc) {
+    cfg_next_proc->next_proc = ast_to_cfg(ast_next_proc->children[BLOCK], NULL);
+    cfg_next_proc = cfg_next_proc->next_proc;
+    ast_next_proc = ast_next_proc->children[NEXT_PROC];
+  }
+  return cfg_list_head;
+}
+
+/*
+cfg_node* cfg_init(ast_node* program) {
+  if (!program) return NULL;
   ast_node* next = program->children[PROC_LIST_HEAD];
   cfg_node* proc = ast_to_cfg(next->children[BLOCK], NULL);
   next = next->children[NEXT_PROC];
@@ -98,3 +113,4 @@ cfg_node* cfg_init(ast_node* program) {
   }
   return proc;
 }
+*/
