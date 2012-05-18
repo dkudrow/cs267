@@ -6,6 +6,9 @@ OBJ = main.o ll2_parser.o ast.o cfg.o draw.o
 SRCDIR = .
 TESTDIR = testing
 TEST = test.verf
+# Cudd libraries and inlcudes
+CUDDLIB = ./cudd/lib/libcudd.a ./cudd/lib/libmtr.a ./cudd/lib/libst.a ./cudd/lib/libutil.a ./cudd/lib/libepd.a
+CUDDINC = ./cudd/include
 
 $(TARGET): $(OBJ)
 	$(CC) $(CFLAGS) -o $(TARGET) $(OBJ)
@@ -19,6 +22,10 @@ ll2_parser.0: ast.h
 ast.o: ast.h
 cfg.o: ast.h cfg.h
 draw.o: ast.h cfg.h
+
+cudd: testcudd.c
+	$(CC) -c testcudd.c -I$(CUDDINC) -g -DDD_STATS
+	$(CC) -g -DDD_STATS -o testcudd testcudd.o $(CUDDLIB) -lm
 
 clean:
 	rm -f $(OBJ) $(TARGET) *~
