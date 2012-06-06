@@ -2,7 +2,7 @@
 CC = gcc
 CFLAGS = -g -Wall
 TARGET = dmc
-OBJ = main.o ll2_parser.o ast.o cfg.o draw.o
+OBJ = main.o ll2_parser.o ast.o cfg.o draw.o bdd.o
 SRCDIR = .
 TESTDIR = testing
 TEST = test.verf
@@ -11,24 +11,25 @@ CUDDLIB = ./cudd/lib/libcudd.a ./cudd/lib/libmtr.a ./cudd/lib/libst.a ./cudd/lib
 CUDDINC = ./cudd/include
 
 $(TARGET): $(OBJ)
-	$(CC) $(CFLAGS) -o $(TARGET) $(OBJ)
+	$(CC) $(CFLAGS) -o $(TARGET) $(OBJ) -DDD_STATS $(CUDDLIB) -lm
 	rm -f $(OBJ) *~
 
 %.o: %.c
-	$(CC) $(CFLAGS) -c $<
+	$(CC) $(CFLAGS) -c -I$(CUDDINC) -g -DDD_STATS $<
 
 main.o: ast.h cfg.h
-ll2_parser.0: ast.h
+ll2_parser.o: ast.h
 ast.o: ast.h
 cfg.o: ast.h cfg.h
 draw.o: ast.h cfg.h
+bdd.o: bdd.h
 
 cudd: testcudd.c
 	$(CC) -c testcudd.c -I$(CUDDINC) -g -DDD_STATS
 	$(CC) -g -DDD_STATS -o testcudd testcudd.o $(CUDDLIB) -lm
 
 clean:
-	rm -f $(OBJ) $(TARGET) *~
+	rm -f $(OBJ) $(TARGET) *~ $(TESTDIR)/*.dot*
 
 test: $(TARGET)
 	./$(TARGET) < $(TESTDIR)/$(TEST) > $(TESTDIR)/$(TEST).dot

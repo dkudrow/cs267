@@ -22,7 +22,7 @@ void ast_draw_node(ast_node* host, int parent, FILE* out) {
   int current = node_count++;          /* id of current node */
   switch (host->tag) {
     case _prog:                        /* visit program node */
-      fprintf(out, "%i [label=Program];\n", current);
+      fprintf(out, "%i [label=\"Program pc:%i\"];\n", current, host->id);
       ast_draw_node(host->children[DECL_LIST_HEAD], current, out);
       ast_draw_node(host->children[PROC_LIST_HEAD], current, out);
       break;

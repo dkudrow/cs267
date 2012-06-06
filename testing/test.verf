@@ -1,6 +1,3 @@
-l1: a:=true;
-l2: while (true) do {
-  l3: b:=false;
-  l4: c:=false;
-}
-l5: d:=true;
+a;
+await(a);
+skip;

@@ -25,6 +25,7 @@ typedef struct _cfg_node {
   struct _cfg_node* next_proc;
 } cfg_node;  
 
+/* CFG methods */
 void cfg_draw_graph(cfg_node* host, FILE* out);
 cfg_node* cfg_init(ast_node* program);
 

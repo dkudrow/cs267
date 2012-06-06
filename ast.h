@@ -1,6 +1,6 @@
 /* ast.h
  * Written by Daniel Kudrow, 04/30/12
- * Last updated 05/17/12
+ * Last updated 05/29/12
  *
  * abstract syntax tree
  */
@@ -52,9 +52,9 @@ typedef struct _ast_node {
   /* generic members common to all AST nodes */
   char* label;
   char* name;
-  int id;
-  int val;
-  struct _ast_node* children[4];
+  int id;                              /* in program nodes 'id' holds the */
+  int val;                             /* number of statements in the */
+  struct _ast_node* children[4];       /* process */
 } ast_node;
 
 

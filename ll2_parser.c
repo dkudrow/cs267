@@ -76,8 +76,8 @@ char* token_to_string(token_t token) {
 }
 
 /* array of reserved names */
-int num_rids = 9;
-struct {
+static int num_rids = 9;
+static struct {
   char* name;
   token_t type;
 } rids[] = {
@@ -87,12 +87,13 @@ struct {
 };
 
 /* global variables */
-int lineno = 1;                        /* current line */
-int charno = 1;                        /* current char */
-char buffer[65] = "";                  /* buffer for lexeme */
-char lexeme[65];                       /* current lexeme */
-token_t lookahead_1;                   /* first lookahead */
-token_t lookahead_2;                   /* second lookahead */
+static int lineno = 1;                 /* current line */
+static int charno = 1;                 /* current char */
+static char buffer[65] = "";           /* buffer for lexeme */
+static char lexeme[65];                /* current lexeme */
+static token_t lookahead_1;            /* first lookahead */
+static token_t lookahead_2;            /* second lookahead */
+static int stat_count = 1;             /* statement counter */
 
 /* wrap fgetc and increment charno */
 char fgetc_(FILE* in) {
@@ -240,6 +241,8 @@ void parse_processes(ast_node* program) {
   do {
     block = ast_push_proc(program);
     parse_process(block);
+    program->id = (program->id < stat_count ? stat_count : program->id);
+    stat_count = 1;
   } while (match(T_CONCUR, T_UNDEF));
   expect(T_EOF);
 }
@@ -271,8 +274,7 @@ void parse_statements(ast_node* block) {
 
 /* lstatement -> ['ID' ':'] statement */
 int parse_lstatement(ast_node* block) {
-  static int count = 0;                /* assign unique ID to each statement */
-  int current_id = count++;            /* store ID before parsing a block */
+  int current_id = stat_count++;            /* store ID before parsing a block */
   char* label = (char*)NULL;
   ast_node* expr;
   ast_node* block1, *block2;
@@ -316,7 +318,7 @@ int parse_lstatement(ast_node* block) {
     ast_push_await_stat(block, label, expr, current_id);
     return 1;
   } else {
-    --count;                           /* backtrack statement counter */
+    --stat_count;                           /* backtrack statement counter */
     return 0;
   }
 }
