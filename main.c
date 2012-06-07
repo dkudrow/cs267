@@ -9,10 +9,6 @@
 
 #include "cfg.h"
 #include "bdd.h"
-#include "cudd.h"
-#include "util.h"
-
-DdNode* encode_prog(DdManager* m, pos* postab, cfg_node* proc_list_head);
 
 int main() {
   ast_node* tree = parse();

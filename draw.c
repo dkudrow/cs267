@@ -2,7 +2,9 @@
  * Written by Daniel Kudrow, 04/30/12
  * Last updated 05/17/12
  *
- * visual representation of abstrat syntzx tree
+ * visual representation of abstrat syntax tree
+ * this file contains methods that create visual representations of the AST
+ * and CFG
  */
 
 #include <stdio.h>

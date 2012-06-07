@@ -3,6 +3,7 @@
  * Last updated 05/17/12
  *
  * abstract syntax tree
+ * this file contains methods used by the parser to build an AST
  */
 
 # include <stdlib.h>

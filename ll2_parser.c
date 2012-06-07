@@ -3,6 +3,7 @@
  * Last updated 05/17/12
  *
  * lexer and parser
+ * this file contains the lexer and parser responsible for generating the AST
  */
 
 #include <stdio.h>
@@ -274,7 +275,7 @@ void parse_statements(ast_node* block) {
 
 /* lstatement -> ['ID' ':'] statement */
 int parse_lstatement(ast_node* block) {
-  int current_id = stat_count++;            /* store ID before parsing a block */
+  int current_id = stat_count++;       /* store ID before parsing a block */
   char* label = (char*)NULL;
   ast_node* expr;
   ast_node* block1, *block2;
@@ -318,7 +319,7 @@ int parse_lstatement(ast_node* block) {
     ast_push_await_stat(block, label, expr, current_id);
     return 1;
   } else {
-    --stat_count;                           /* backtrack statement counter */
+    --stat_count;                      /* backtrack statement counter */
     return 0;
   }
 }

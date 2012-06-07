@@ -3,6 +3,8 @@
  * Last updated 05/29/12
  *
  * conrtol flow graph
+ * this file contains functions that superimpose a set of edges onto an AST
+ * to create a CFG
  */
 
 #include <stdlib.h>

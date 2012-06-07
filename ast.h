@@ -3,6 +3,8 @@
  * Last updated 05/29/12
  *
  * abstract syntax tree
+ * this file defines the structures and functions needed by the parser to 
+ * construct an AST
  */
 
 #ifndef AST_H
@@ -50,13 +52,13 @@ typedef struct _ast_node {
   } tag;
 
   /* generic members common to all AST nodes */
-  char* label;
-  char* name;
-  int id;                              /* in program nodes 'id' holds the */
-  int val;                             /* number of statements in the */
-  struct _ast_node* children[4];       /* process */
-} ast_node;
-
+  char* label;                         /* the statement's label */
+  char* name;                          /* the assignment variable */
+  int id;                              /* the statements pc value */
+  int val;                             /* the value of a literal */
+  struct _ast_node* children[4];       /* the next statement */
+} ast_node;                            /* in program nodes, the if field */
+                                       /* contains the highest pc value */
 
 /* AST methods */
 void ast_draw_tree(ast_node* tree, FILE* out);

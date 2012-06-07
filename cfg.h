@@ -3,6 +3,8 @@
  * Last updated 05/17/12
  *
  * conrtol flow graph
+ * this files contains a structures and function prototypes to aid in
+ * generating CFG's
  */
 
 #ifndef CFG_H
