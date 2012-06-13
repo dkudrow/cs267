@@ -128,9 +128,14 @@ DdNode* bdd_encode_pc(DdManager* m, DdNode* node, int** pc_array, int pc_size,
 
 /* recursively convert an AST expression into a BDD */
 DdNode* bdd_expr(DdManager* m, symbol** symtab, ast_node* expr) {
+  int i;
   DdNode* ret, *tmp1, *tmp2;
   switch (expr->tag) {
     case _id_expr:                     /* simply return that variable's BDD */
+      if ((i = symtab_lookup(symtab, expr->name)) < 0) {
+        printf("Error: variable '%s' not found in symbol table\n", expr->name);
+        exit(1);
+      }  
       ret = Cudd_bddIthVar(m, symtab_lookup(symtab, expr->name));
       break;
     case _lit_expr:                    /* return a BDD 1 or 0 */
@@ -228,7 +233,7 @@ DdNode* bdd_mk_assign(DdManager *m, pos* postab, cfg_node* host, int proc) {
   Cudd_RecursiveDeref(m, tmp2);
   ret = bdd_encode_pc(m, ret, postab->pc, postab->pc_size, proc,
                       host->node->id); /* encode program counter */
-  tmp1 = bdd_same(m, postab, symtab_lookup(postab->vars_, host->node->name),
+  tmp1 = bdd_same(m, postab, symtab_lookup(postab->vars, host->node->name),
                   proc);               /* encode unchanging variables */
   tmp2 = ret;
   ret = Cudd_bddAnd(m, tmp1, tmp2);
@@ -252,36 +257,25 @@ DdNode* bdd_convert_cfg(DdManager *m, pos* postab, cfg_node* host, int proc,
                         DdNode* current, DdNode* R, int prev) {
   DdNode* branch;                      /* holds branch conditions */
   DdNode* tmp1, *tmp2;                 /* temporary vars for cleanup */
+  current = bdd_encode_pc(m, current, postab->pc_, postab->pc_size, proc,
+                          host->node->id);
+  tmp1 = Cudd_bddOr(m, R, current);    /* add the completed edge to the */
+  Cudd_Ref(tmp1);                      /* transistion system by disjuncting */
+  Cudd_RecursiveDeref(m, R);
+  Cudd_RecursiveDeref(m, current);
+  R = tmp1;  
   switch (host->node->tag) {
     case _assign_stat:                 /* assignment and skip statements */
     case _skip_stat:                   /* form very similar edges */
-      current = bdd_encode_pc(m, current, postab->pc_, postab->pc_size, proc,
-                              host->node->id);
-      tmp1 = Cudd_bddOr(m, R, current); /* add the completed edge to the */
-      Cudd_Ref(tmp1);                   /* transistion system by disjuncting */
-      Cudd_RecursiveDeref(m, R);
-      Cudd_RecursiveDeref(m, current);
-      if (prev < 0) return tmp1;        /* terminate in case of back edge */
       if (host->node->tag == _assign_stat)
         current = bdd_mk_assign(m, postab, host, proc);
       else if (host->node->tag == _skip_stat)
         current = bdd_mk_skip(m, postab, host->node->id,  proc);
-      if (host->succ[CONTINUE])  {     /* if the node has a successor */
-        R = bdd_convert_cfg(m, postab, host->succ[CONTINUE], proc, current,
-                            tmp1, host->node->id);
-        Cudd_RecursiveDeref(m, tmp1);  /* initiate new edge and call again */
-      } else {                         /* if the node terminates a branch */
-        current = bdd_encode_pc(m, current, postab->pc_, postab->pc_size, proc,
-                                host->node->id);
-        R = Cudd_bddOr(m, tmp1, current);
-        Cudd_Ref(R);                   /* terminate node with an infinite loop */
-        Cudd_RecursiveDeref(m, tmp1);
-        Cudd_RecursiveDeref(m, current);
-      }
-      return R;
+      break;
     case _if_then_stat:                /* if a branch is encountered, */
     case _if_else_stat:                /* add the branch condition to the  */
     case _while_stat:                  /* edge's encoding and continue */
+      current = bdd_mk_skip(m, postab, host->node->id,  proc);
       tmp1 = bdd_expr(m, postab->vars, host->node->children[EXPR]);
       branch = Cudd_bddAnd(m, tmp1, current);
       Cudd_Ref(branch);                /* conjunct branch condition to branch */
@@ -291,62 +285,44 @@ DdNode* bdd_convert_cfg(DdManager *m, pos* postab, cfg_node* host, int proc,
       Cudd_RecursiveDeref(m, current);
       current = tmp2;
       if (host->node->id < prev)       /* terminate after back edge */
-        tmp1 = bdd_convert_cfg(m, postab, host->succ[CFG_IF | CFG_WHILE], proc,
-                              branch, R, -1);
-      else                             /* traverse the 'true' branch */
+        return R;
+      else {                           /* traverse the 'true' branch */
         tmp1 = bdd_convert_cfg(m, postab, host->succ[CFG_IF | CFG_WHILE], proc,
                               branch, R, prev);
-      Cudd_RecursiveDeref(m, R);
-      R = tmp1;
-      if (host->succ[CONTINUE]) {      /* traverse the 'false' branch */
-        if (host->node->id < prev)     /* again checking for back edges */
-          tmp1 = bdd_convert_cfg(m, postab, host->succ[CONTINUE | CFG_ELSE], proc,
-                                 current, R, -1);
-        else
-          tmp1 = bdd_convert_cfg(m, postab, host->succ[CONTINUE | CFG_ELSE], proc,
-                                 current, R, prev);
         Cudd_RecursiveDeref(m, R);
-        R = tmp1;
       }
-      return R;
+      break;
     case _await_stat:                  /* await is both a branch and a skip */
-      current = bdd_encode_pc(m, current, postab->pc_, postab->pc_size, proc,
-                              host->node->id);
-      tmp1 = Cudd_bddOr(m, R, current);/* terminate arriving edge */
-      Cudd_Ref(tmp1);
-      Cudd_RecursiveDeref(m, R);
-      Cudd_RecursiveDeref(m, current);
-      R = tmp1;                        /* initiate departing edge */
       tmp1 = bdd_mk_skip(m, postab, host->node->id,  proc);
       tmp2 = bdd_expr(m, postab->vars, host->node->children[EXPR]);      
-      branch = Cudd_bddAnd(m, tmp1, tmp2);
-      Cudd_Ref(branch);                /* conjunct branch condition to branch */
-      current = Cudd_bddAnd(m, Cudd_Not(tmp1), tmp2);
-      Cudd_Ref(current);               /* conjuct complement of the branch */
-      Cudd_RecursiveDeref(m, tmp1);    /* condition to current */
-      Cudd_RecursiveDeref(m, tmp2);    /* current is a self-referential edge */
-      current = bdd_encode_pc(m, current, postab->pc_, postab->pc_size, proc,
+      current = Cudd_bddAnd(m, tmp1, tmp2);
+      Cudd_Ref(current);               /* conjunct branch condition to current */
+      branch = Cudd_bddAnd(m, tmp1, Cudd_Not(tmp2));
+      Cudd_Ref(branch);                /* conjuct complement of the branch */
+      Cudd_RecursiveDeref(m, tmp1);    /* condition to branch */
+      Cudd_RecursiveDeref(m, tmp2);    /* branch is a self-referential edge */
+      branch = bdd_encode_pc(m, branch, postab->pc_, postab->pc_size, proc,
                               host->node->id);
-      tmp1 = Cudd_bddOr(m, R, current);
+      tmp1 = Cudd_bddOr(m, R, branch);
       Cudd_Ref(tmp1);
       Cudd_RecursiveDeref(m, R);
-      Cudd_RecursiveDeref(m, current); /* branch edge continues to next node */
-      if (host->succ[CONTINUE])  {     /* if the node has a successor */
-        R = bdd_convert_cfg(m, postab, host->succ[CONTINUE], proc, branch, tmp1,
-                            host->node->id);
-        Cudd_RecursiveDeref(m, tmp1);  /* initiate new edge and call again */
-      } else {                         /* otherwise stay forever */
-        branch = bdd_encode_pc(m, branch, postab->pc_, postab->pc_size, proc,
-                                host->node->id);
-        R = Cudd_bddOr(m, tmp1, branch);
-        Cudd_Ref(R);
-        Cudd_RecursiveDeref(m, tmp1);
-        Cudd_RecursiveDeref(m, branch);
-      }
-      return R; 
+      Cudd_RecursiveDeref(m, branch);  /* continue edge continues to next node */
+      break;
     default:
       printf("Error: invalid statement in CFG\n");
       exit(1);
+  }
+  if (host->succ[CONTINUE])  {         /* if the node has a successor */
+    R = bdd_convert_cfg(m, postab, host->succ[CONTINUE], proc, current,
+                        tmp1, host->node->id);
+    Cudd_RecursiveDeref(m, tmp1);      /* initiate new edge and call again */
+  } else {                             /* if the node terminates a branch */
+    current = bdd_encode_pc(m, current, postab->pc_, postab->pc_size, proc,
+                            host->node->id);
+    R = Cudd_bddOr(m, tmp1, current);
+    Cudd_Ref(R);                       /* terminate node with an infinite loop */
+    Cudd_RecursiveDeref(m, tmp1);
+    Cudd_RecursiveDeref(m, current);
   }
   return R;                            /* return complete transition relation */
 }
@@ -359,6 +335,8 @@ DdNode* encode_prog(DdManager* m, pos* postab, cfg_node* proc_list_head) {
   cfg_node* next = proc_list_head;
   int proc_no = 0;                     /* all process begin with an 'init' */
   while (next) {                       /* skip node that has id = 0 */
+//     init = Cudd_ReadOne(m);
+//     init = bdd_encode_pc(m, init, postab->pc, postab->pc_size, proc_no, 0);
     init = bdd_mk_skip(m, postab, 0, proc_no);
     proc = bdd_convert_cfg(m, postab, proc_list_head, proc_no, init, R, 0);
     tmp = Cudd_bddOr(m, R, proc);      /* add process to transition relation */
@@ -370,4 +348,52 @@ DdNode* encode_prog(DdManager* m, pos* postab, cfg_node* proc_list_head) {
     ++proc_no;
   }
   return R;                            /* return complete transition relation */
+}
+
+DdNode* compute_EX(DdManager* m, pos* postab, DdNode* R, DdNode* p) {
+  DdNode* tmp;
+  /* rename variables */
+  int perm[2*(postab->num_procs*postab->pc_size+postab->num_vars)];
+  int i, j, k;
+  for (i=0; i<postab->num_vars; i++) {
+    perm[i] = i+postab->num_vars;
+    perm[i+postab->num_vars] = i;
+  }
+  for (j=0; j<postab->num_procs; j++) {
+    for (k=0; k<postab->pc_size; k++) {
+      perm[postab->num_vars+i] = postab->pc_[j][k];
+      perm[postab->num_vars+postab->num_procs*postab->pc_size+i++] = postab->pc[j][k];
+    }
+  }
+  p = Cudd_bddPermute(m, p, perm);
+  /* construct cube of next state variables */
+  DdNode* cube = Cudd_ReadOne(m);
+  for (i=0; i<postab->num_vars; i++) {
+    tmp = Cudd_bddAnd(m, cube, Cudd_bddIthVar(m, postab->num_vars+i));
+    Cudd_Ref(tmp);
+    Cudd_RecursiveDeref(m, cube);
+    cube = tmp;
+  }
+  for (i=0; i<postab->num_procs*postab->pc_size; i++) {
+    tmp = Cudd_bddAnd(m, cube, Cudd_bddIthVar(m, 2*postab->num_vars+postab->num_procs*postab->pc_size+i));
+    Cudd_Ref(tmp);
+    Cudd_RecursiveDeref(m, cube);
+    cube = tmp;
+  }
+  DdNode* EX_p = Cudd_bddAndAbstract(m, R, p, cube);
+  Cudd_Ref(EX_p);
+  Cudd_RecursiveDeref(m, p);
+  Cudd_RecursiveDeref(m, cube);
+  return EX_p;
+}
+
+DdNode* compute_EF(DdManager* m, pos* postab, DdNode* R, DdNode* p) {
+  DdNode* last = Cudd_ReadOne(m);
+  DdNode* current = p;
+    while (!Cudd_EquivDC(m, last, current, Cudd_ReadLogicZero(m))) {
+//       printf("iterating\n");
+    last = Cudd_bddAnd(m, current, Cudd_ReadOne(m));
+    current = Cudd_bddOr(m, p, compute_EX(m, postab, R, current));
+  }
+  return current;
 }

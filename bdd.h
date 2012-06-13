@@ -28,6 +28,7 @@ typedef struct {
   int num_vars;                        /* number of global variables */
   int num_procs;                       /* number of processes */
   int pc_size;                         /* bit length of program counter */
+  symbol** labels;                     /* program counter labels */
   symbol** vars;                       /* global variables */
   symbol** vars_;                      /* next state global variables */
   int** pc;                            /* program counters */
@@ -36,6 +37,8 @@ typedef struct {
 
 /* BDD methods */
 pos* pos_init(ast_node* program);
+DdNode* bdd_expr(DdManager* m, symbol** symtab, ast_node* expr);
 DdNode* encode_prog(DdManager* m, pos* postab, cfg_node* proc_list_head);
+DdNode* compute_EX(DdManager* m, pos* postab, DdNode* R, DdNode* p);
 
 #endif /* BDD_H */ 

@@ -24,12 +24,12 @@ void ast_draw_node(ast_node* host, int parent, FILE* out) {
   int current = node_count++;          /* id of current node */
   switch (host->tag) {
     case _prog:                        /* visit program node */
-      fprintf(out, "%i [label=\"Program pc:%i\"];\n", current, host->id);
+      fprintf(out, "%i [label=\"Program\"];\n", current);
       ast_draw_node(host->children[DECL_LIST_HEAD], current, out);
       ast_draw_node(host->children[PROC_LIST_HEAD], current, out);
       break;
     case _decl:                        /* visit declaration node */
-      fprintf(out, "%i [label=%s];\n", current, host->name);
+      fprintf(out, "%i [label=\"Declaration\\n'%s'\"];\n", current, host->name);
       fprintf(out, "%i -> %i;\n", parent, current);
       ast_draw_node(host->children[NEXT_DECL], parent, out);
       break;
@@ -43,27 +43,27 @@ void ast_draw_node(ast_node* host, int parent, FILE* out) {
       ast_draw_node(host->children[STAT_LIST_HEAD], parent, out);
       break;
     case _assign_stat:                 /* visit assignment statement node */
-      fprintf(out, "%i [label=\"Assign: %s\"];\n", current, AST_LABEL(host));
+      fprintf(out, "%i [label=\"Assign\\nlabel: %s\"];\n", current, AST_LABEL(host), host->name);
       fprintf(out, "%i -> %i;\n", parent, current);
-      fprintf(out, "%i [label=%s];\n", node_count, host->name);
+      fprintf(out, "%i [label=\"'%s'\"];\n", node_count, host->name);
       fprintf(out, "%i -> %i;\n", current, node_count++);
       ast_draw_node(host->children[EXPR], current, out);
       ast_draw_node(host->children[NEXT_STAT], parent, out);
       break;
     case _skip_stat:                   /* visit skip statement node */
-      fprintf(out, "%i [label=\"Skip: %s\"];\n", current, AST_LABEL(host));
+      fprintf(out, "%i [label=\"Skip\\nlabel: %s\"];\n", current, AST_LABEL(host));
       fprintf(out, "%i -> %i;\n", parent, current);
       ast_draw_node(host->children[NEXT_STAT], parent, out);
       break;
     case _if_then_stat:                /* visit if-then statement node */
-      fprintf(out, "%i [label=\"If-Then: %s\"];\n", current, AST_LABEL(host));
+      fprintf(out, "%i [label=\"If-Then\\nlabel:  %s\"];\n", current, AST_LABEL(host));
       fprintf(out, "%i -> %i;\n", parent, current);
       ast_draw_node(host->children[EXPR], current, out);
       ast_draw_node(host->children[BLOCK1], current, out);
       ast_draw_node(host->children[NEXT_STAT], current, out);
       break;
     case _if_else_stat:                /* visit if-then-else statement node */
-      fprintf(out, "%i [label=\"If-Then: %s\"];\n", current, AST_LABEL(host));
+      fprintf(out, "%i [label=\"If-Then\\nlabel:  %s\"];\n", current, AST_LABEL(host));
       fprintf(out, "%i -> %i;\n", parent, current);
       ast_draw_node(host->children[EXPR], current, out);
       ast_draw_node(host->children[BLOCK1], current, out);
@@ -71,14 +71,14 @@ void ast_draw_node(ast_node* host, int parent, FILE* out) {
       ast_draw_node(host->children[NEXT_STAT], parent, out);
       break;
     case _while_stat:                  /* visit while statement node */
-      fprintf(out, "%i [label=\"While: %s\"];\n", current, AST_LABEL(host));
+      fprintf(out, "%i [label=\"While\\nlabel:  %s\"];\n", current, AST_LABEL(host));
       fprintf(out, "%i -> %i;\n", parent, current);
       ast_draw_node(host->children[EXPR], current, out);
       ast_draw_node(host->children[BLOCK1], current, out);
       ast_draw_node(host->children[NEXT_STAT], parent, out);
       break;
     case _await_stat:                  /* visit await statement node */
-      fprintf(out, "%i [label=\"Await: %s\"];\n", current, AST_LABEL(host));
+      fprintf(out, "%i [label=\"Await\\nlabel:  %s\"];\n", current, AST_LABEL(host));
       fprintf(out, "%i -> %i;\n", parent, current);
       ast_draw_node(host->children[EXPR], current, out);
       ast_draw_node(host->children[NEXT_STAT], parent, out);
@@ -86,7 +86,7 @@ void ast_draw_node(ast_node* host, int parent, FILE* out) {
     case _id_expr:                     /* visit id expression node */
       fprintf(out, "%i [label=ID];\n", current);
       fprintf(out, "%i -> %i;\n", parent, current);
-      fprintf(out, "%i [label=%s];\n", node_count, host->name);
+      fprintf(out, "%i [label=\"'%s'\"];\n", node_count, host->name);
       fprintf(out, "%i -> %i;\n", current, node_count++);
       break;
     case _lit_expr:                    /* visit literal expression node */
@@ -139,22 +139,22 @@ void ast_draw_tree(ast_node* tree, FILE* out) {
 void cfg_to_string(cfg_node* host, FILE* out) {
   switch(host->node->tag) {
     case _assign_stat:
-      fprintf(out, "\"ASSIGN\\n%s\\npc: %i", CFG_LABEL(host), host->node->id);
+      fprintf(out, "\"ASSIGN\\nlabel: %s\\npc: %i", CFG_LABEL(host), host->node->id);
       break;
     case _skip_stat:
-      fprintf(out, "\"SKIP\\n%s\\npc: %i", CFG_LABEL(host), host->node->id);
+      fprintf(out, "\"SKIP\\nlabel: %s\\npc: %i", CFG_LABEL(host), host->node->id);
       break;
     case _if_then_stat:
-      fprintf(out, "\"IF-THEN\\n%s\\npc: %i", CFG_LABEL(host), host->node->id);
+      fprintf(out, "\"IF-THEN\\nlabel: %s\\npc: %i", CFG_LABEL(host), host->node->id);
       break;
     case _if_else_stat:
-      fprintf(out, "\"IF-ELSE\\n%s\\npc: %i", CFG_LABEL(host), host->node->id);
+      fprintf(out, "\"IF-ELSE\\nlabel: %s\\npc: %i", CFG_LABEL(host), host->node->id);
       break;
     case _while_stat:
-      fprintf(out, "\"WHILE\\n%s\\npc: %i", CFG_LABEL(host), host->node->id);
+      fprintf(out, "\"WHILE\\nlabel: %s\\npc: %i", CFG_LABEL(host), host->node->id);
       break;
     case _await_stat:
-      fprintf(out, "\"AWAIT\\n%s\\npc: %i", CFG_LABEL(host), host->node->id);
+      fprintf(out, "\"AWAIT\\nlabel: %s\\npc: %i", CFG_LABEL(host), host->node->id);
       break;
   }
 }

@@ -33,5 +33,7 @@ clean:
 
 test: $(TARGET)
 	./$(TARGET) < $(TESTDIR)/$(TEST) > $(TESTDIR)/$(TEST).dot
+	sed '/size/ d' < $(TESTDIR)/$(TEST).dot > $(TESTDIR)/tmp.$(TEST).dot
+	mv $(TESTDIR)/tmp.$(TEST).dot $(TESTDIR)/$(TEST).dot
 	dot -Tpng $(TESTDIR)/$(TEST).dot -O
 	display $(TESTDIR)/$(TEST).dot.png

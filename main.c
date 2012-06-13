@@ -12,62 +12,47 @@
 
 int main() {
   ast_node* tree = parse();
-  pos* p = pos_init(tree);
+  pos* pt = pos_init(tree);
 //   ast_draw_tree(tree, stdout); 
   cfg_node* cfg = cfg_init(tree);
 //   cfg_draw_graph(cfg, stdout);
+  
   DdManager* m;
   m = Cudd_Init(0,0,CUDD_UNIQUE_SLOTS,CUDD_CACHE_SLOTS,0);
-//   TEST expressions
-//   DdNode* a = bdd_expr(m, p->symtab, tree->children[PROC_LIST_HEAD]->children[BLOCK]->children[STAT_LIST_HEAD]->children[EXPR]);
-
-//   TEST pc encoding  
-//   DdNode* a = bdd_encode_pc(m, Cudd_ReadOne(m), p->pc_, p->pc_size, 0, 0);
-//   DdNode* b = bdd_encode_pc(m, Cudd_ReadOne(m), p->pc_, p->pc_size, 0, 1);
-//   DdNode* c = bdd_encode_pc(m, Cudd_ReadOne(m), p->pc_, p->pc_size, 0, 2);
-//   DdNode* d = bdd_encode_pc(m, Cudd_ReadOne(m), p->pc_, p->pc_size, 0, 3);
-
-//   DdNode* pc1 = Cudd_bddIthVar(m, 0);
-//   DdNode* pc2 = Cudd_bddIthVar(m, 1);
-//   DdNode* pc3 = Cudd_bddIthVar(m, 2);
-//   DdNode* a = Cudd_bddAnd(m, Cudd_Not(pc1), Cudd_Not(pc2));
-//   a = Cudd_bddAnd(m, a, Cudd_Not(pc3));
-//   DdNode* b = Cudd_bddAnd(m, pc1, Cudd_Not(pc2));
-//   b = Cudd_bddAnd(m, b, Cudd_Not(pc3));
-//   DdNode* c = Cudd_bddAnd(m, Cudd_Not(pc1), pc2);
-//   c = Cudd_bddAnd(m, c, Cudd_Not(pc3));
-//   DdNode* d = Cudd_bddAnd(m, pc1, pc2);
-//   d = Cudd_bddAnd(m, d, Cudd_Not(pc3));
-//   char* R_names[] = {"1", "2", "3"};
-//   char* O_names[] = {"a", "b", "c", "d"};  
   
-//   DdNode* dump_array[] = {a, b, c, d};
-//   char* R_names[] = {"a", "b", "c", "a'", "b'", "c'", "0", "1", "2", "0'", "1'", "2'"};
-//   char* O_names[] = {"a", "b", "c", "d"};
-
-//   TEST same
-//   DdNode* a = bdd_same(m, p, 0, -1);
-
-//   DdNode* var1 = Cudd_bddIthVar(m, 0);
-//   DdNode* var2 = Cudd_bddIthVar(m, 1);
-//   DdNode* var3 = Cudd_bddIthVar(m, 2);
-//   DdNode* var4 = Cudd_bddIthVar(m, 3);
-//   
-//   DdNode* a = Cudd_bddXnor(m, var1, var2);
-//   DdNode* b = Cudd_bddXnor(m, var3, var4);
-//   DdNode* c = Cudd_bddAnd(m, a, b);
+//   DdNode* var1 = Cudd_ReadOne(m);
+//   DdNode* var2 = Cudd_ReadOne(m);
+//   DdNode* var3 = Cudd_ReadOne(m);
+//   DdNode* var4 = Cudd_ReadOne(m);
+//   var1 = bdd_encode_pc(m, var1, pt->pc, pt->pc_size, 0, 0);
+//   var2 = bdd_encode_pc(m, var2, pt->pc_, pt->pc_size, 0, 1);
+//   var3 = bdd_encode_pc(m, var3, pt->pc, pt->pc_size, 0, 1);
+//   var4 = bdd_encode_pc(m, var4, pt->pc_, pt->pc_size, 0, 1);
+//   DdNode* both1 = Cudd_bddAnd(m, var1, var2);
+//   DdNode* both2 = Cudd_bddAnd(m, var3, var4);
+//   DdNode* both = Cudd_bddOr(m, both1, both2);
   
-//   char* R_names[] = {"var1", "var2", "var3", "var4"};
-//   char* O_names[] = {"a", "b", "c"}; 
+
+  DdNode* R = encode_prog(m, pt, cfg);
+  DdNode* p = bdd_expr(m, pt->vars, tree->children[SPEC_LIST_HEAD]->children[EXPR]);
   
-//   TEST all
-  DdNode* a = encode_prog(m, p, cfg);
-  char* O_names[] = {"a"};
-  char* R_names[] = {"a", "a'", "0", "1", "0'", "1'"};
+  DdNode* ex_p = compute_EX(m, pt, R, p);
+  
+//   /* TEST */
+//   DdNode* testprog = encode_prog(m, p, cfg);
+  char* O_names[] = {"EX(p)"};
+  
+  /* test.verf */
+  char* R_names[] = {"a",/* "b",*/ "a'",/* "b'",*/ 
+                     "pc1_0", "pc1_1", "pc2_0", "pc2_1",
+                     "pc1'_0", "pc1'_1", "pc2'_0", "pc2'_1"};
+  
+  /* test.mutex.verf */
 //   char* R_names[] = {"a", "b", "turn", "a'", "b'", "turn'", "pc1_0", "pc1_1",
 //                      "pc1_2", "pc2_0", "pc2_1", "pc2_2", "pc1_0'", "pc1_1'",
 //                      "pc1_2'", "pc2_0'", "pc2_1'", "pc2_2'"};
-  DdNode* dump_array[] = {a};
+
+  DdNode* dump_array[] = {ex_p};
   Cudd_DumpDot(m, 1, dump_array, R_names, O_names, stdout);
   return 0;
 }

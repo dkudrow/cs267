@@ -17,7 +17,8 @@
 typedef enum {
   T_UNDEF = -1, T_EOF, T_SEMI, T_COLON, T_CONCUR, T_ID, T_SKIP, T_IF,
   T_THEN, T_ELSE, T_WHILE, T_DO, T_AWAIT, T_ASSIGN, T_L_PAREN, T_R_PAREN,
-  T_L_BRACE, T_R_BRACE, T_TRUE, T_FALSE, T_NOT, T_AND, T_OR, T_IMPL, T_EQ
+  T_L_BRACE, T_R_BRACE, T_L_BRACK, T_R_BRACK, T_TRUE, T_FALSE, T_NOT, T_AND,
+  T_OR, T_IMPL, T_EQ, T_AF, T_EF, T_EG, T_AG
 } token_t;
 
 /* return string representation of token */
@@ -59,6 +60,10 @@ char* token_to_string(token_t token) {
       return "'{'";
     case T_R_BRACE:
       return "'}'";
+    case T_L_BRACK:
+      return "'['";
+    case T_R_BRACK:
+      return "']'";
     case T_TRUE:
       return "'true'";
     case T_FALSE:
@@ -73,18 +78,26 @@ char* token_to_string(token_t token) {
       return "'=>'";
     case T_EQ:
       return "'='";
+    case T_AF:
+      return "'AF'";
+    case T_EF:
+      return "'EF'";
+    case T_AG:
+      return "'AG'";
+    case T_EG:
+      return "'EG'";
   }
 }
 
 /* array of reserved names */
-static int num_rids = 9;
+static int num_rids = 13;
 static struct {
   char* name;
   token_t type;
 } rids[] = {
-  {"true", T_TRUE}, {"false", T_FALSE}, {"skip", T_SKIP},
-  {"if", T_IF}, {"then",T_THEN}, {"else", T_ELSE},
-  {"while", T_WHILE}, {"do",T_DO}, {"await",T_AWAIT}
+  {"true", T_TRUE}, {"false", T_FALSE}, {"skip", T_SKIP}, {"if", T_IF},
+  {"then", T_THEN}, {"else", T_ELSE}, {"while", T_WHILE}, {"do", T_DO},
+  {"await", T_AWAIT}, {"AF", T_AF}, {"EF", T_EF}, {"AG", T_AG}, {"EG", T_EG}
 };
 
 /* global variables */
@@ -167,6 +180,10 @@ int get_next_token(FILE* in) {
       return T_L_BRACE;
     case '}':
       return T_R_BRACE;
+    case '[':
+      return T_L_BRACK;
+    case ']':
+      return T_R_BRACK;
     case EOF:
       return T_EOF;
     default:                           /* unrecognized symbol */
@@ -214,6 +231,7 @@ void expect(token_t expected) {
 
 /* forward declarations for parser */
 void parse_program(ast_node* program);
+void parse_specification(ast_node* program);
 void parse_declarations(ast_node* program);
 void parse_processes(ast_node* program);
 void parse_process(ast_node* block);
@@ -226,8 +244,18 @@ ast_node* parse_base();
 
 /* program -> declaration* processes */
 void parse_program(ast_node* program) {
+  parse_specification(program);
   parse_declarations(program);
   parse_processes(program);
+}
+
+void parse_specification(ast_node* program) {
+  ast_node* expr;
+  while (match(T_L_BRACK, T_UNDEF)) {
+    expr = parse_expression();
+    ast_push_spec(program, expr);
+    expect(T_R_BRACK);
+  }
 }
 
 /* Declaration -> 'id' ';' */
@@ -285,11 +313,11 @@ int parse_lstatement(ast_node* block) {
     char* name = strdup(lexeme);       /* save lexeme before advancing */
     expr = parse_expression();
     expect(T_SEMI);
-    ast_push_assign_stat(block, label, name, expr, current_id);
+    ast_push_assign_stat(block, label, name, expr, current_id, lineno);
     return 1;
   } else if (match(T_SKIP, T_UNDEF)) { /* parse skip statement */
     expect(T_SEMI);
-    ast_push_skip_stat(block, label, current_id);
+    ast_push_skip_stat(block, label, current_id, lineno);
     return 1;
   } else if (match(T_IF, T_UNDEF)) {   /* parse if-then-else statement */
     expect(T_L_PAREN);
@@ -299,9 +327,9 @@ int parse_lstatement(ast_node* block) {
     block1 = parse_block();
     if (match(T_ELSE, T_UNDEF)) {      /* create else node */
       block2 = parse_block();
-      ast_push_if_else_stat(block, label, expr, block1, block2, current_id);
+      ast_push_if_else_stat(block, label, expr, block1, block2, current_id, lineno);
     } else
-      ast_push_if_then_stat(block, label, expr, block1, current_id);
+      ast_push_if_then_stat(block, label, expr, block1, current_id, lineno);
     return 1;
   } else if (match(T_WHILE, T_UNDEF)) {/* parse while statement */
     expect(T_L_PAREN);
@@ -309,14 +337,14 @@ int parse_lstatement(ast_node* block) {
     expect(T_R_PAREN);
     expect(T_DO);
     block1 = parse_block();
-    ast_push_while_stat(block, label, expr, block1, current_id);
+    ast_push_while_stat(block, label, expr, block1, current_id, lineno);
     return 1;
   } else if (match(T_AWAIT, T_UNDEF)) {/* parse await statement */
     expect(T_L_PAREN);
     expr = parse_expression();
     expect(T_R_PAREN);
     expect(T_SEMI);
-    ast_push_await_stat(block, label, expr, current_id);
+    ast_push_await_stat(block, label, expr, current_id, lineno);
     return 1;
   } else {
     --stat_count;                      /* backtrack statement counter */
@@ -334,16 +362,16 @@ ast_node* parse_expression() {
 ast_node* parse_expression_(ast_node* lhs) {
   if (match(T_AND, T_UNDEF)) {         /* parse binary and expression */
     ast_node* rhs = parse_expression();
-    return ast_push_and_expr(lhs, rhs);
+    return ast_push_and_expr(lhs, rhs, lineno);
   } else if (match(T_OR, T_UNDEF)) {   /* parse binary or expression */
     ast_node* rhs = parse_expression();
-    return ast_push_or_expr(lhs, rhs);
+    return ast_push_or_expr(lhs, rhs, lineno);
   } else if (match(T_EQ, T_UNDEF)) {   /* parse binary equality expression */
     ast_node* rhs = parse_expression();
-    return ast_push_eq_expr(lhs, rhs);
+    return ast_push_eq_expr(lhs, rhs, lineno);
   } else if (match(T_IMPL, T_UNDEF)) { /* parse binary implies expression */
     ast_node* rhs = parse_expression();
-    return ast_push_impl_expr(lhs, rhs);
+    return ast_push_impl_expr(lhs, rhs, lineno);
   }
   return lhs;
 }
@@ -351,18 +379,30 @@ ast_node* parse_expression_(ast_node* lhs) {
 /* base -> 'id' | 'true' | 'false' | '(' expression ')' | '!' base */
 ast_node* parse_base() {
   if (match(T_ID, T_UNDEF))            /* parse variable instance */
-    return ast_push_id_expr(strdup(lexeme));
+    return ast_push_id_expr(strdup(lexeme), lineno);
   else if (match(T_TRUE, T_UNDEF))     /* parse literal */
-    return ast_push_lit_expr(1);
+    return ast_push_lit_expr(1, lineno);
   else if (match(T_FALSE, T_UNDEF))
-    return ast_push_lit_expr(0);
+    return ast_push_lit_expr(0, lineno);
   else if (match(T_L_PAREN, T_UNDEF)) {/* parse parenthetical */
     ast_node* expr = parse_expression();
     expect(T_R_PAREN);
     return expr;
   } else if (match(T_NOT, T_UNDEF)) {  /* parse unary not */
     ast_node* expr = parse_base();
-    return ast_push_not_expr(expr);
+    return ast_push_not_expr(expr, lineno);
+  } else if (match(T_AF, T_UNDEF)) {  /* parse CTL AF */
+    ast_node* expr = parse_base();
+    return ast_push_AF_expr(expr, lineno);
+  } else if (match(T_EF, T_UNDEF)) {  /* parse CTL EF */
+    ast_node* expr = parse_base();
+    return ast_push_EF_expr(expr, lineno);
+  } else if (match(T_AG, T_UNDEF)) {  /* parse CTL AG */
+    ast_node* expr = parse_base();
+    return ast_push_AG_expr(expr, lineno);
+  } else if (match(T_EG, T_UNDEF)) {  /* parse CTL EG */
+    ast_node* expr = parse_base();
+    return ast_push_EG_expr(expr, lineno);
   }
   else
     syntax_error("'ID', '(', '!', 'true' or 'false'");

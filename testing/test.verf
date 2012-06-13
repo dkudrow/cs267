@@ -1,3 +1,4 @@
+[!a]
 a;
-await(a);
-skip;
+a:=true;
+a:=false;

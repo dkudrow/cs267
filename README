@@ -5,7 +5,8 @@ Parser and abstract syntax tree for toy language. To be used as a front end
 for model checking project.
 
 Grammar:
-program       ->      declaration* processes
+program       ->      specification* declaration* processes
+specification ->      [expression]*
 declaration   ->      ID ";"
 processes     ->      process ["||" processes]
 process       ->      lstatement+
@@ -18,6 +19,10 @@ statement     ->      ID ":=" expression ";"
               ->      "while" "(" expression ")" "do" block
               ->      "await" "(" expression ")" ";"
 expression    ->      ! expression
+              ->      AF expression
+              ->      EF expression
+              ->      AG expression
+              ->      EG expression
               ->      expression & expression
               ->      expression | expression
               ->      expression => expression
